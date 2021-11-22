@@ -10,12 +10,14 @@ from scipy.io import savemat
 
 from numpy import genfromtxt
 filepath='lightcurves/'
-filenames = sorted(glob.glob(filepath+'lcvold*.dat')) # loading all lightcurve data filenames
+filenames = sorted(glob.glob(filepath+'lcvold*.dat')) # loading all old lightcurve data 
+# comment the line above and uncomment below line to save PSD for new data instead of old
+# filenames = sorted(glob.glob(filepath+'lcvnew*.dat')) # loading all new lightcurve data filenames
 
 c=0
-a= np.zeros((300,1))
+a= np.zeros((300,1)) # PSD vectors
 
-
+# loading up all data and saving their PSD files iteratively. 
 for nam in filenames:
     data = genfromtxt(nam, delimiter=',')
     data[:,0]=data[:,0]*60;

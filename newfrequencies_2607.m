@@ -1,4 +1,6 @@
 % code for finding dominant frequencies in old and new data
+% run this first, followed by newfeatures_1903.m and then allfeatures.m
+
 clear variables
 close all
 %% declaring file path
@@ -112,16 +114,12 @@ for i=1:300
     features(i,24)=delp;
     features(i,25)=r(i);
     features(i,26)=a(i);
-    % features(i,27)=radius(i,1);
-    % features(i,28)=radius(i,2);
 end
 
 featuretable=array2table(features);
 featurelist={'beta' 'J2' 'a/c' 'f1' 'f2' 'f3' 'f4' 'f5' 'f6' 'f7' 'f8' 'fn1' 'fn2' 'fn3' 'fn4' 'fn5' 'fn6' 'fn7' 'fn8' 'beta_estimate' 'delv' 'io' 'in' 'delp' 'r' 'a'};
 featuretable.Properties.VariableNames=featurelist;
 %saving the data as a CSV file 
-
-toc
 
 %% function to calculate roots of the hohmann transfer equations
 function F =root2d(x,delp,delv)

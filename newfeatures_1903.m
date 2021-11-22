@@ -57,7 +57,8 @@ for i=1:300
 end
 
 
-D=importdata('newfeaturelist_2peaks_1708.csv');
+% saving the extracted features in a csv file
+D=importdata('newfeaturelist_2607.csv');
 d=D.data;
 n=D.textdata;
 features=[d sd max_slope MAD mbrp skew scatter_res varabove]; 
