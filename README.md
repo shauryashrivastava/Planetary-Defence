@@ -1,9 +1,10 @@
 # Planetary-Defence
-Git repository for [Kelvins Planetary Defence Challenge] (http://kelvins.esa.int/planetary-defence/)
---------------------------
+Git repository for [Kelvins Planetary Defence Challenge](http://kelvins.esa.int/planetary-defence/)
+=========================
+
 
 This can also act as a light curve analysis code, with both feature extraction and regeression algorithms included in the package.
-=========================
+--------------------------
 
 
 Code Description: 
@@ -15,3 +16,5 @@ Code Description:
 3. _frequencyplomb.py_ is used to get the PSD of the lightcurve data from python's LombScargle implementation.
 
 4. _reconstructed.m_ uses PSD of the light curve to reconstruct a cleaner simpler version of the light curves, with less high frequency components.
+
+The lightcurves are included in the lightcurve package and can also be accessed from the competition portal.
