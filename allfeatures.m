@@ -1,7 +1,15 @@
-%% code to get all the features from new light curve reconstruction and python frequencies
+%%  MATLAB code to extract meaningful features for a binary asteroid using lightcurve data 
+% Input: light curve data samples 
+% Output: meaningful features using fourier transform and signal processing 
+
+% author: Shaurya Shrivastava (shaurya039@gmail.com)
 
 clear variables
 close all
+
+%% Loading constants, data and other parameters
+% In our implementation, we found the Python implementation of the Lomb-Scargle Periodogram to be 
+% more accurate and precise compared to the MATLAB implementation. You may use the MATLAB plomb function instead.
 
 load('PSDold.mat')
 load('PSDnew.mat') % loading the python power spectra
@@ -12,37 +20,27 @@ mu=6.67*3; msp=700;vsp=5000;ms=1.3e9; %spacecraft weight and other parameters
 
 
 f=zeros(300,75);
-wierd=[217
-218
-239
-254
-258
-262
-266
-278
-293
-294
-];
+wierd=[217; 218; 239; 254; 258; 262; 266; 278; 293; 294];
+ % for the given data, these samples were outliers, according to some metrices (eg: variance> some constant or no of peaks < 6, in our case)
 past=importdata('newfeaturelist_1903.csv');
-wierdcasesf=past.data(:,9);
 abovetime=past.data(:,21:26);
 
-harmonics=zeros(300,36);
+harmonics=zeros(300,36); % primary harmonics in the light curve data
+sd=zeros(300,3);         % standard deviation
+max_slope=zeros(300,3);  % max slope
+MAD=zeros(300,3);        % mean absolute deviation
+mbrp=zeros(300,3);       % median buffer range percentage
+skew=zeros(300,3);       % skewness
+scatter_res=zeros(300,3);% MAD(y-y_m)/MAD(y)
+varabove=zeros(300,3);   % variance of the fraction of data which is above the mean
+diptime=zeros(300,6);    % time taken to go from mean to minima
 
+% saving the features data (with training variables as well)
+features(1:200,1:3)=given;
+features(201:300,1:3)=NaN;
 
-
-tic 
-sd=zeros(300,3);
-max_slope=zeros(300,3);
-MAD=zeros(300,3);
-mbrp=zeros(300,3);
-skew=zeros(300,3);
-scatter_res=zeros(300,3);
-varabove=zeros(300,3);
-diptime=zeros(300,6);
-
-for i=5
-    %importing the lightcurve data
+for i=1:300
+    %importing the lightcurve data (available on http://kelvins.esa.int/planetary-defence/)
     pathold = 'lightcurves/lcvold';
     pathnew = 'lightcurves/lcvnew';
     file=sprintf('%s%.3d.dat',pathold,i);
@@ -61,7 +59,7 @@ for i=5
     time_old=data(1,1):600:data(end,2);
     time_new=datan(1,1):600:datan(end,2);
 
-    if i==278           % strange case! 
+    if i==278           % strange case! % can be modified to handle outliers
         fn=[fn fn(end)];
     end
 
@@ -76,6 +74,28 @@ for i=5
     ft = 2*pi*datan(:,1)*fn;
     ABC = [ones(size(ft(:,1))) cos(ft) sin(ft)] \ datan(:,2);
     recon_new=[ones(size(ft(:,1))) cos(ft) sin(ft)] * ABC;
+
+    % calculating dominant frequencies 
+
+    
+    %% pre collision data analysis
+    timediff=data(2:end,1)-data(1:end-1,1);
+    ind=find(abs(timediff-600)==0);
+    data10=data(ind+1,:);
+    s1=[data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' data10(:,2)' ];
+    ss1=[s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1];
+    t=zeros(size(ss1));
+    for j=1:length(data10):length(t)
+        t(j:j+length(data10)-1)=data10(:,1)'+(data10(end,1)+1)*((j-1)/length(data10));
+    end
+    [pxx,fr] = plomb(ss1,t);
+    [~,indo]=max(pxx);
+    [~,loc]=findpeaks(pxx,'NPeaks',8,'Sortstr','descend');
+    features(i,4:11)=fr(loc)';
+    r(i)=((1/fr(indo))/(2*pi/sqrt(mu)))^(2/3);
+    clear s1 ss1 loc
+
+
 
 
     %% calculating the non-dominant frequencies
@@ -161,10 +181,6 @@ for i=5
         ixn=find(datan(k,1)==tn);
         errn(k)=datan(k,2)-totalrecon_new(ixn);
     end
-
-
-
-
 
     %% assigning frequency according to frequency rules
     % fo1: 2.5-2.9e-5  fn1: 2.1-2.7e-5
@@ -329,12 +345,6 @@ for i=5
     end
     f(i,64)=(f(i,62)+f(i,63))/2;
     [~,ppos]=findpeaks(totalrecon_old,to,'NPeaks',8,'Sortstr','descend','MinPeakHeight',-mean(totalrecon_old),'MinPeakDistance',12000);
-    % ato=zeros(length(pos)-1);
-    % for j=1:length(pos)-1
-    %     at=totalrecon_old(to>pos(j) & to < pos(j+1));
-    %     ato(j)=(to(at>mean(at)));
-    % end
-    % at=mean(ato);
     cc=0;dto=0;
     for j=1:length(ppos)
         fff=min(pos(pos>ppos(j)));
@@ -343,11 +353,7 @@ for i=5
             cc=cc+1;
         end
     end
-    % dto=dto/cc;
     diptime(i,1)=dto;
-    % diptime(i,2)=at;
-    % clear dips pos ppos 
-
 
     %% post-collision dip analysis
     [dips,pos]=findpeaks(-totalrecon_new,tn,'NPeaks',8,'Sortstr','descend','MinPeakHeight',-mean(totalrecon_new),'MinPeakDistance',12000);
@@ -364,12 +370,6 @@ for i=5
     end
     f(i,68)=(f(i,66)+f(i,67))/2;
     [~,ppos]=findpeaks(totalrecon_new,tn,'NPeaks',8,'Sortstr','descend','MinPeakHeight',-mean(totalrecon_new),'MinPeakDistance',12000);
-    % ato=zeros(length(pos)-1);
-    % for j=1:length(pos)-1
-    %     at=totalrecon_old(to>pos(j) & to < pos(j+1));
-    %     ato(j)=(to(at>mean(at)));
-    % end
-    % at=mean(ato);
     cc=0;dto=0;
     for j=1:length(ppos)
         fff=min(pos(pos>ppos(j)));
@@ -380,10 +380,6 @@ for i=5
     end
     dto=dto/cc;
     diptime(i,2)=dto;
-    % diptime(i,4)=at;
-
-    % diptime(i,5:6)=diptime(i,3:4)-diptime(i,1:2);
-
     % change in orbital parameters
     f(i,69:72)=f(i,65:68)-f(i,61:64);
 
@@ -475,9 +471,6 @@ for i=5
         tdiff = (to-to(pos(j)))';
         idg = find(tdiff>0 &  totalrecon_old>mean(totalrecon_old));
         idl = find(tdiff<0 &  totalrecon_old>mean(totalrecon_old));
-        
-        % greater=find( tdiff(idg)==((idg-pos(j))*10));%  || (tdiff(idg)==( ((idg-pos(j))*10) + 10) ) );% || rpos(idg) == ((idg-pos)*10+10) )
-        % lesser =find( tdiff(idl)==((idl-pos(j))*10));%  || (tdiff(idl)==( ((idl-pos(j))*10) - 10) ) );
         if ~isempty(idg)
             % disp(j);
             % disp(data(idg(greater),1));
@@ -507,7 +500,6 @@ for i=5
 
     timediff=to(pre(2:end))-to(post(1:end-1));
     timediff=timediff(timediff>0);
-    % disp(timediff);
     diptime(i,3)=mean(timediff);
 
 
@@ -520,9 +512,6 @@ for i=5
         tdiff = (tn-tn(pos(j)))';
         idg = find(tdiff>0 &  totalrecon_new>mean(totalrecon_new));
         idl = find(tdiff<0 &  totalrecon_new>mean(totalrecon_new));
-        
-        % greater=find( tdiff(idg)==((idg-pos(j))*10));%  || (tdiff(idg)==( ((idg-pos(j))*10) + 10) ) );% || rpos(idg) == ((idg-pos)*10+10) )
-        % lesser =find( tdiff(idl)==((idl-pos(j))*10));%  || (tdiff(idl)==( ((idl-pos(j))*10) - 10) ) );
         if ~isempty(idg)
             % disp(j);
             % disp(data(idg(greater),1));
@@ -552,23 +541,17 @@ for i=5
 
     timediff=tn(pre(2:end))-tn(post(1:end-1));
     timediff=timediff(timediff>0);
-    % disp(timediff);
     diptime(i,4)=mean(timediff);
-
     diptime(i,5)=diptime(i,2)-diptime(i,1);
     diptime(i,6)=diptime(i,4)-diptime(i,3);
 
 end
 
+% saving all data into a new file
 D=importdata('newfeaturelist_1903.csv');
 d=D.data(:,1:3);
 features=[d f sd max_slope MAD mbrp skew scatter_res varabove harmonics diptime abovetime];
 featurename={'beta' 'J2' 'a/c' 'f1' 'f2' 'f3' 'f4' 'f5' 'fn1' 'fn2' 'fn3' 'fn4' 'fn5' 'hfo' 'hfn' 'df1' 'df2' 'df3' 'df4' 'df5' 'dhf' 'mo' 'co' 'mn' 'cn' 'dm' 'dc' 'afo1' 'afo2' 'afo3' 'afo21' 'afo31' 'afn1' 'afn2' 'afn3' 'afn21' 'afn31' 'daf1' 'daf2' 'daf3' 'daf21' 'daf31' 'rvaro' 'rmseo' 'rvarn' 'rmsen' 'drvar' 'drmse' 'ao' 'an' 'dfa' 'ko' 'kn' 'dk' 'pdfpo' 'pdfpn' 'dfpdfp' 'pao' 'pan' 'dpa' 'rmso' 'rmsn' 'drms' 'bo' 'to1' 'to2' 'mto' 'bn' 'tn1' 'tn2' 'mtn' 'db' 'dto1' 'dto2' 'dmt' 'r' 'a' 'betac' 'sdo' 'sdn' 'dsd' 'mso' 'msn' 'dms' 'mado' 'madn' 'dmad' 'mbrpo' 'mbrpn' 'dmbrp'  'skewo' 'skewn' 'dskew' 'sro' 'srn' 'dsrn' 'vabvo' 'vabvn' 'dfvabv' 'a11o' 'a21o' 'a31o' 'a12o' 'a22o' 'a32o' 'a13o' 'a23o' 'a33o' 'p11o' 'p21o' 'p31o' 'p12o' 'p22o' 'p32o' 'p13o' 'p23o' 'p33o' 'a11n' 'a21n' 'a31n' 'a12n' 'a22n' 'a32n' 'a13n' 'a23n' 'a33n' 'p11n' 'p21n' 'p31n' 'p12n' 'p22n' 'p32n' 'p13n' 'p23n' 'p33n' 'rdto' 'rdtn' 'rato' 'ratn' 'rddt' 'rdat' 'dto' 'dtn' 'ddt' 'ato' 'atn' 'dat'};
 featuretable=array2table(features);
 featuretable.Properties.VariableNames=featurename;
-writetable(featuretable,'newfeaturelist_0209.csv');
-
-toc 
-
-
-% 'beta', 'J2', 'a/c', 'f1', 'f2', 'f3', 'f4', 'f5', 'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'hfo', 'hfn', 'df1', 'df2', 'df3', 'df4', 'df5', 'dhf', 'mo', 'co', 'mn', 'cn', 'dm', 'dc', 'afo1', 'afo2', 'afo3', 'afo21', 'afo31', 'afn1', 'afn2', 'afn3', 'afn21', 'afn31', 'daf1', 'daf2', 'daf3', 'daf21', 'daf31', 'rvaro', 'rmseo', 'rvarn', 'rmsen', 'drvar', 'drmse', 'ao', 'an', 'dfa', 'ko', 'kn', 'dk', 'pdfpo', 'pdfpn', 'dfpdfp', 'pao', 'pan', 'dpa', 'rmso', 'rmsn', 'drms', 'bo', 'to1', 'to2', 'mto', 'bn', 'tn1', 'tn2', 'mtn', 'db', 'dto1', 'dto2', 'dmt', 'r', 'a', 'betac', 'sdo', 'sdn', 'dsd', 'mso', 'msn', 'dms', 'mado', 'madn', 'dmad', 'mbrpo', 'mbrpn', 'dmbrp', 'skewo', 'skewn', 'dskew', 'sro', 'srn', 'dsrn', 'vabvo', 'vabvn', 'dfvabv', 'a11o', 'a21o', 'a31o', 'a12o', 'a22o', 'a32o', 'a13o', 'a23o', 'a33o', 'p11o', 'p21o', 'p31o', 'p12o', 'p22o', 'p32o', 'p13o', 'p23o', 'p33o', 'a11n', 'a21n', 'a31n', 'a12n', 'a22n', 'a32n', 'a13n', 'a23n', 'a33n', 'p11n', 'p21n', 'p31n', 'p12n', 'p22n', 'p32n', 'p13n', 'p23n', 'p33n', 'rdto', 'rdtn', 'rato', 'ratn', 'rddt', 'rdat', 'dto', 'dtn', 'ddt', 'ato', 'atn', 'dat'
+writetable(featuretable,'allfeaturelist.csv');
