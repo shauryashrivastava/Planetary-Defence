@@ -47,7 +47,7 @@ for i=1:300
     filen=sprintf('%s%.3d.dat',pathnew,i);
     data=importdata(file);
     datan=importdata(filen);
-    data(:,1)=data(:,1)*60;
+    data(:,1)=data(:,1)*60; % converting to seconds
     datan(:,1)=datan(:,1)*60;
 
     % finding the first 'n' dominant frequencies 
@@ -74,9 +74,6 @@ for i=1:300
     ft = 2*pi*datan(:,1)*fn;
     ABC = [ones(size(ft(:,1))) cos(ft) sin(ft)] \ datan(:,2);
     recon_new=[ones(size(ft(:,1))) cos(ft) sin(ft)] * ABC;
-
-    % calculating dominant frequencies 
-
     
     %% pre collision data analysis
     timediff=data(2:end,1)-data(1:end-1,1);
@@ -282,6 +279,7 @@ for i=1:300
 
 
     if ~isempty(find(i==wierd))
+         % for wierd cases exception
         f(i,6)=2.31e-5;
     end
     
